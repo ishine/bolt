@@ -1,142 +1,208 @@
+# Contents
+&nbsp;&nbsp;&nbsp;&nbsp;[Prerequisites](#prerequisites)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Linux System Compilation Tools](#linux-system-compilation-tools)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Windows System Compilation Tools](#windows-system-compilation-tools)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[MacOS System Compilation Tools](#macos-system-compilation-tools)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Android Cross-Compilation Tools](#android-cross-compilation-toolsoptional)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Linux-AArch64 Cross-Compilation Tools](#linux-aarch64-cross-compilation-toolsoptional)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[iOS Cross-Compilation Tools](#ios-cross-compilation-toolsoptional)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Tools](#tools)  
+&nbsp;&nbsp;&nbsp;&nbsp;[Download and Build Bolt](#download-and-build-bolt)  
+&nbsp;&nbsp;&nbsp;&nbsp;[Common install problem](#common-install-problem)  
+
+
 # Prerequisites
 
-- CMake
+## Linux System Compilation Tools
 
-  We use [cmake v3.15.1](https://cmake.org/files/v3.15/cmake-3.15.1-Linux-x86_64.tar.gz) to build Bolt. After installing the cmake, you need to set shell environment **PATH** to find it. You can use this simple test to confirm you have installed it successfully.
+- ### CMake
+
+   Download and install Cmake from <https://cmake.org/download/>. Set shell environment variable **PATH**.
+
+- ### GNU make
+
+   Download and install make from <https://ftp.gnu.org/gnu/make/>. Set shell environment variable **PATH**.
+
+- ### Wget
+
+   Download and install Wget from <https://www.gnu.org/software/wget/>. Set shell environment variable **PATH**.
+
+## Windows System Compilation Tools
+
+- ### Git Shell
+
+   Download and install Git Shell from <https://gitforwindows.org/>. Set shell environment variable **PATH**.
+
+- ### CMake
+
+   Download and install Cmake from <https://cmake.org/download/>. Set shell environment variable **PATH**.
+
+- ### Wget
+
+   Download and install Wget from <https://eternallybored.org/misc/wget/>. Set shell environment variable **PATH**.
+
+- ### MinGW toolchains(mingw32-make, gcc, g++)
+
+   Download and install Mingw32-w64 from <https://udomain.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/6.4.0/threads-posix/seh/x86_64-6.4.0-release-posix-seh-rt_v5-rev0.7z>.
+
+## MacOS System Compilation Tools
+
+- ### Xcode
+
+   Download and install Xcode.
+
+## Android Cross-Compilation Tools(optional)
+
+- ### Android NDK
+
+    Refer to the [NDK installation example](https://askubuntu.com/questions/837847/how-to-install-android-ndk) to install [android-ndk-r20](https://developer.android.google.cn/ndk/downloads) and set shell environment variable **ANDROID_NDK_ROOT**.
+
+    ```
+    export ANDROID_NDK_ROOT=/data/opt/android-ndk-r20
+    ```
+
+## Linux-AArch64 Cross-Compilation Tools(optional)
+
+- ### Cross compiler
+
+    Install [gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu](https://developer.arm.com/-/media/Files/downloads/gnu-a/8.3-2019.03/binrel/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu.tar.xz?revision=2e88a73f-d233-4f96-b1f4-d8b36e9bb0b9&la=en&hash=167687FADA00B73D20EED2A67D0939A197504ACD) and set shell environment **PATH**.
+
+## iOS Cross-Compilation Tools(optional)
+
+- ### Cross compiler for Linux
+
+    [Here is an tutorial for building toolchains](IOS_USAGE.md).
+
+- ### Cross compiler for MacOS
   
-  ```shell
-  cmake -version
+    You can use MacOS's clang to build. Only need to set shell environment **IOS_SDK_ROOT** to iPhoneOS.sdk.
+
+    ```
+    export IOS_SDK_ROOT=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+    ```
+
+## Tools
+
+- ### Android adb
+
+  Refer to the [ADB installation example](https://unix.stackexchange.com/questions/378041/how-to-install-adb-on-ubuntu-from-download) to install [ADB](https://developer.android.com/studio/command-line/adb.html) tool helping you transfer the executables to android mobile phones.
+
+  ```
+  export PATH=/data/opt/platform-tools:$PATH
   ```
 
-- GNU make
+- ### Android dx
 
-  We use [GNU make v3.81](http://ftp.gnu.org/gnu/make/make-3.81.tar.gz) to build Bolt. After installing the make, you also need to set shell environment **PATH**. Simple test:
+  If you want to directly run *jar* file on Android device, you can use [Android dx tool](https://developer.android.com/studio/releases/build-tools). Install Android *v28.0.3* build tools and set shell environment **PATH**.
+
+
+- ### JDK
+
+  If you want to use Java API without Android NDK, you need to install JDK.
   
-  ```shell
-  make -version
-  ```
-
-- Cross compiler
-
-    If you plan to directly compile Bolt on ARM platform and run on ARM, you can use gcc and skip this section.
-
-    NDK compiler uses Android NDK toolchains to build Bolt for Java APIs required by Android applications. GNU compiler uses gcc to build Bolt for simple tests. Please choose according to your scenario.
-    
-    - Android NDK compiler
-      
-        We use Android NDK [android-ndk-r20](https://dl.google.com/android/repository/android-ndk-r20b-linux-x86_64.zip?hl=zh-cn) to build Bolt. After installing the Android NDK, you need to set shell environment **PATH** to find *aarch64-linux-android21-clang++*. Simple test:
-        
-        ```shell
-        aarch64-linux-android21-clang++ --version
-        ```
-    
-    - GNU compiler
-      
-        We use GNU compiler [gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu](https://developer.arm.com/-/media/Files/downloads/gnu-a/8.3-2019.03/binrel/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu.tar.xz?revision=2e88a73f-d233-4f96-b1f4-d8b36e9bb0b9&la=en&hash=167687FADA00B73D20EED2A67D0939A197504ACD) to build Bolt. You need to set shell environment **PATH** to find *aarch64-linux-gnu-g++*. Simple test:
-        
-        ```shell
-        aarch64-linux-gnu-g++ --version
-        ```
-    
-- ADB
-
-  We use [ADB](https://developer.android.com/studio/command-line/adb.html) tool to transfer the executables to android mobile phones and run the program. You also need to set shell environment **PATH**. Simple test:
+  Download and install [OpenJDK](http://openjdk.java.net/install/) and set shell environment **PATH** and **JNI_ROOT**.
   
-  ```shell
-  # this will list all available android devices
-  adb devives
   ```
-
-- Optional
-    - Java SDK
-    
-        If you want to compile Java programs, you need to download and install [Java SE SDK](https://www.oracle.com/java/technologies/oracle-java-archive-downloads.html). After installing the SDK, you need to set shell environment **PATH** to find it. Simple test:
-        ```shell
-        java -version
-        ```
-        
-    - Android dx
-    
-        If you want to directly run *jar* file on Android device, you can use [Android dx tool](https://developer.android.com/studio/releases/build-tools). We currently use Android *v28.0.3* build tools. After installing the *dx* tool, you also need to set shell environment **PATH**. Simple test:
-        ```shell
-        dx --version
-        ```
-    
-- Third party library
-
-  We provide a simple [install shell script](../third_party/install.sh) to install third party libraries(*protoc, protobuf, flatbuffers, tensorflow-lite, jpeg, ARM GPU OpenCL*) to the [third_party](third_party) directory and generate a shell script to set up compilation environment. You can choose between LLVM and GCC. Here is an example of installation for LLVM.
-
-  ```shell
-  ./third_party/install.sh -c llvm -t 33
+  export JNI_ROOT=/data/opt/openjdk-16_windows-x64_bin
+  export PATH=${JNI_ROOT}/bin:$PATH
   ```
 
 # Download and Build Bolt
 
-We provide a simple shell script [install.sh](../install.sh) to build and install the Bolt library, and you can modify it according to your scenario and environment. Please refer to the options section of [bolt.cmake](../bolt.cmake) and configure accordingly. Here we give an example of building Bolt with LLVM.
+A simple shell script [install.sh](../install.sh) is provided to build and install the Bolt library, and you should modify it according to your scenario and environment. Use help message to find more useful information. 
 
-```shell
-git clone https://github.com/huawei-noah/bolt.git
-cd bolt
-./install.sh -c llvm -t 33
-```
+We will install Bolt to *install_[target]* directory. These subdirectories will be found in it:
 
-We will install Bolt to *install_llvm* directory, you will find these subdirectories in it.
-
-- bin
-    - *tinybert* for intention identification
-        
-    - *nmt* for machine translation
-    
-    - *classification* for computer vision classification task
-    
-    
 - include
-    - C API
-    - Java API
-
-- lib: all static and shared library
+    - [C API](../inference/engine/api/c) header file
+    - [Java API](../inference/engine/api/java) class file
+- lib
+    - libBoltModel.so: build for Java application
+    - libbolt.so: build for C/C++ application
+    - libflow.so: flow sub project library, when using --flow option
+    - libinference.so: inference sub project library
+    - libtensor.so: tensor computing sub project library
+    - libimage.so: image sub project library
+    - libblas_enhance.so: blas_enhance sub project library
+    - libmodel_tools.so: model_tools sub project library
+    - libuni.so: uni sub project library
 - tools
-    - *caffe2bolt* for converting caffe model to bolt model
-    
-    - *onnx2bolt* for converting onnx model to bolt model
-    
-    - *tflite2bolt* for converting tflite model to bolt model
-    
+    - *X2bolt* for generally converting deep learning(caffe/onnx/tflite) model to bolt model
     - *tensorflow2caffe* for converting tensorflow model to caffe model
-
     - *pytorch2caffe* for converting pytorch model to caffe model
-
     - *tensor_computing_library_search* for performance tuning of the operator library
-      
-If you want to build operator and API tests, please turn on the *BUILD_TEST* option and rebuild Bolt. These programs will be installed to *tests/bin* directory.
+- tests
+    - operator unit test
+- examples
+    - *benchmark* for measuring inference performance of any model (.bolt)
+    These examples will be build when using "--test" install option.
+    - *classification* for imagenet classification task
+    - *tinybert* for intention identification
+    - *nmt* for machine translation
+    - *asr_rnnt* for automatic speech recognition task (RNNT model)
+    - *asr_convolution_transformer* for automatic speech recognition task (Convolution+Transformer model)
+    - *tts* for text to speech
+- docs
+    - API/html: doxygen html document for C/Java/Flow API   
 
-## Options
+# Common install problem
 
-Here we list all options in [bolt.cmake](../bolt.cmake).
+- ### wget error
 
-| options               | default | note                                          |
-| --------------------- | ------- | --------------------------------------------- |
-| USE_CROSS_COMPILE     | OFF     | use cross compile or not                      |
-| USE_GNU_GCC           | OFF     | use GNU gcc compler or not                    |
-| USE_LLVM_CLANG        | OFF     | use LLVM clang compiler or not                |
-| USE_DEBUG             | OFF     | use debug information or not                  |
-| USE_DYNAMIC_LIBRARY   | OFF     | use dynamic library or not                    |
-| USE_CAFFE             | ON      | use caffe model as input or not               |
-| USE_ONNX              | ON      | use onnx model as input or not                |
-| USE_TFLITE            | ON      | use tflite model as input or not              |
-| USE_NEON              | ON      | use ARM NEON instruction or not               |
-| USE_FP32              | OFF     | use FP32 implementation or not                |
-| USE_FP16              | ON      | use FP16 implementation or not                |
-| USE_F16_MIX_PRECISION | ON      | use ARM NEON mixed-precision (F16/F32) or not |
-| USE_INT8              | ON      | use INT8 implementation or not                |
-| BUILD_TEST            | OFF     | build unit test or not                        |
-| USE_OPENMP            | ON      | use OPENMP for parallel or not                |
-| USE_MALI              | ON      | use MALI GPU for parallel or not              |
+  Use wget to download file. If you use proxy to access the network, you may be reminded to add *--no-check-certificate* flag when using wget.
+  
+- ### Download is limited by network proxy or time consuming.
 
+  You can download these files and save to a specified directory, Bolt will automatically use it.
+  
+  1. save Linux protoc <https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/protoc-3.14.0-linux-x86_64.zip> 
+      or Windows protoc <https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/protoc-3.14.0-win64.zip> 
+      or MacOS protoc <https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/protoc-3.14.0-osx-x86_64.zip> to *third_party/sources/* directory.
+  2. save <https://github.com/protocolbuffers/protobuf/archive/v3.14.0.tar.gz> to *third_party/sources/protobuf-3.14.0.tar.gz*.
+  3. save <https://github.com/google/flatbuffers/tree/master/include> to *third_party/sources/flatbuffers/include*.
+  4. save <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/schema/schema_generated.h> *third_party/sources/tflite/include/tensorflow/lite/schema/schema_generated.h*.
+  5. save <https://github.com/open-source-parsers/jsoncpp/archive/refs/tags/1.9.4.zip> to *third_party/sources/jsoncpp-1.9.4.zip*.
+  6. optional. save <https://github.com/KhronosGroup/OpenCL-Headers/tree/master/CL> to *third_party/sources/opencl/include/CL** when using ARM MALI GPU.
+  7. optional. use *ADB* to pull android phone's </vendor/lib64/libOpenCL.so> and </vendor/lib64/egl/libGLES_mali.so> to *third_party/sources/opencl/lib64* when using ARM MALI GPU.
+  8. optional. save <http://www.ijg.org/files/jpegsrc.v9c.tar.gz> to *third_party/sources/jpegsrc.v9c.tar.gz* when using example.
+  9. optional. save <https://codeload.github.com/anthonix/ffts/zip/master> to *third_party/sources/ffts-master.zip* when using Flow.
 
-## Environment variables
+- ### MinGW version error
 
-We reserve some shell environment variable for Bolt.
+  Third party library protobuf use some POSIX standard system library. If you don't use POSIX version mingw, you may encounter these errors.
+  You can download this link to download POSIX version mingw. <https://udomain.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/6.4.0/threads-posix/seh/x86_64-6.4.0-release-posix-seh-rt_v5-rev0.7z>
 
-- *Bolt_ROOT*: Bolt project home directory, set by user or Bolt.
-- *Bolt_TensorComputing_LibraryAlgoritmMap*: a path on the target device set by user to save tensor_computing library performance tuning result.
+  ```
+  error: 'mutex' in namespace 'std' does not name a type
+   std::mutex mu_;
+  error: 'once_flag' in namespace 'std' does not name a type
+   using once_flag = std::once_flag;
+  error: 'call_once' is not a member of 'std'
+   std::call_once(std::forward<Args>(args)...);
+  error: 'strtoll' was not declared in this scope
+   return strtoll(nptr, endptr, base);
+  error: 'thread' is not a member of 'std'
+   static std::atomic<std::thread::id> runner;
+  ```
+
+- ### Don't want to use third party library or model conversion tools.
+
+  Third party library are used in model conversion tools. If you don't want to use it, you can close it by using *--converter=OFF* option. This will not build third party library.
+
+- ### Only want to use partial model conversion tools.
+
+  You can implement it by changing install.sh. for example, there are some cmake options, such as *-DUSE_CAFFE=ON*.
+
+- ### Only want to use partial inference precision.
+
+  You can implement it by changing install.sh. for example, there are some cmake options, such as *-DUSE_INT8=ON*.
+
+- ### Can not build success with special compiler(such as MinGW)
+
+  You may encounter various compilation problem, this maybe caused by compiler or others. Here is an example.
+
+  ```
+  mingw64\bin\ar.exe: unable to rename 'CMakeFiles\test_softmax.dir/objects.a'; reason: File exists
+  ```
+
+  You can enter build directory *build_[target]* and continuously run *make install*. This may complete all compilation step by step.

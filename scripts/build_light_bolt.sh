@@ -1,55 +1,127 @@
 #!/bin/bash
 
-script_name=$0
-script_abs=$(readlink -f "$0")
-script_dir=$(dirname $script_abs)
+script_dir=$(cd `dirname $0` && pwd)
 BOLT_ROOT=${script_dir}/..
-current_dir=${PWD}
 
-build_dir=$1
-use_mali=$2
+SYSTEM=${1}
+CXX=${2}
+AR=${3}
+STRIP=${4}
+CXXFLAGS=${5}
+OBJ_FILE_SUFFIX=${6}
+SHARED_LIBRARY_PREFIX=${7}
+SHARED_LIBRARY_SUFFIX=${8}
+STATIC_LIBRARY_PREFIX=${9}
+STATIC_LIBRARY_SUFFIX=${10}
+build_dir=${11}
 
-srcs=""
+CXXFLAGS=`echo ${CXXFLAGS} | sed 's/-fPIC//g'`
+CXXFLAGS=`echo ${CXXFLAGS} | sed 's/-static-libstdc++//g'`
+CXXFLAGS=`echo ${CXXFLAGS} | sed 's/-static//g'`
+
+apple_toolchain=false
+if [[ ${CXX} =~ darwin || ${SYSTEM} =~ Darwin ]]; then
+    apple_toolchain=true
+fi
+allObjs=""
+skip_list=()
+objs=""
 searchFiles() {
-    for line in `find $1 -name "*.o"`
+    objs=""
+    for line in ${allObjs}
     do
-        orginalStr=${line}
-        subStr0="static"
-        subStr1="model-tools"
-        subStr2="tests"
-        subStr3="data_loader"
-        #if [[ ${line} =~ ${subStr0}   \
-        if [[ !(${line} =~ ${subStr0})   \
-          && !(${line} =~ ${subStr1}) \
-          && !(${line} =~ ${subStr2}) \
-          && !(${line} =~ ${subStr3}) ]];
+        skip=false
+        for str in "${skip_list[@]}"
+        do
+            if [[ ${line} =~ ${str} ]];
+            then
+                skip=true
+                break
+            fi
+        done
+        if [[ ${skip} == false ]]
         then
-            srcs="${srcs} ${line}"
+            objs="${objs} ${line}"
         fi
     done
 }
 
-searchFiles ${build_dir}
+original_dir=${PWD}
+cd ${build_dir}
+allObjs=`find . -name "*${OBJ_FILE_SUFFIX}"`
+skip_list=("static" "model_tools" "tests" "tools" "examples" "flow" "data_loader" "training" "model_calibration")
+searchFiles
+jniLibraryObjs=${objs}
 
-srcs="${srcs} ${build_dir}/model-tools/src/CMakeFiles/model-tools.dir/model_serialize_deserialize.cpp.o \
-${build_dir}/model-tools/src/CMakeFiles/model-tools.dir/model_tools.cpp.o"
+allObjs=`find . -name "*${OBJ_FILE_SUFFIX}" | grep "static.dir"`
+skip_list=("tests" "tools" "examples" "BoltModel_Jni" "flow" "data_loader" "training" "model_calibration")
+searchFiles
+staticLibraryObjs=${objs}
 
-if [ -f "${BOLT_ROOT}/third_party/llvm/opencl/lib64/libOpenCL.so" ] && [ $use_mali == "ON" ];
-then
-    cp ${BOLT_ROOT}/third_party/llvm/opencl/lib64/libOpenCL.so ${build_dir}
-    aarch64-linux-android-strip ${build_dir}/libOpenCL.so || exit 1
-    #aarch64-linux-android-readelf -dW ${build_dir}/libOpenCL.so
+allObjs=`find . -name "*${OBJ_FILE_SUFFIX}"`
+skip_list=("static" "tests" "tools" "examples" "BoltModel_Jni" "flow" "data_loader" "training" "model_calibration")
+searchFiles
+sharedLibraryObjs=${objs}
+
+gcl_kernel_source_library="common/gcl/tools/kernel_source_compile/${SHARED_LIBRARY_PREFIX}kernelsource${SHARED_LIBRARY_SUFFIX}"
+if [[ -f "${gcl_kernel_source_library}" && ${CXXFLAGS} =~ -D_USE_MALI ]]; then
+    gclLibraryObjs="common/gcl/tools/kernel_source_compile/CMakeFiles/kernelsource.dir/src/cl/gcl_kernel_source.cpp${OBJ_FILE_SUFFIX} \
+        common/gcl/tools/kernel_source_compile/CMakeFiles/kernelsource.dir/src/option/gcl_kernel_option.cpp${OBJ_FILE_SUFFIX}"
+    jniLibraryObjs="${jniLibraryObjs} ${gclLibraryObjs}"
+    staticLibraryObjs="${staticLibraryObjs} ${gclLibraryObjs}"
+    sharedLibraryObjs="${sharedLibraryObjs} ${gclLibraryObjs}"
 fi
 
-if [ -f "${BOLT_ROOT}/gcl/tools/kernel_lib_compile/lib/libkernelbin.so" ] && [ $use_mali == "ON" ];
-then
-    aarch64-linux-android-strip ${BOLT_ROOT}/gcl/tools/kernel_lib_compile/lib/libkernelbin.so || exit 1
-    #cp ${BOLT_ROOT}/gcl/tools/kernel_lib_compile/lib/libkernelbin.so ${build_dir}
-    aarch64-linux-android21-clang++ -shared -o ${build_dir}/libBoltModel.so ${srcs} \
-        -L${BOLT_ROOT}/third_party/llvm/opencl/lib64 -lOpenCL \
-        -L${BOLT_ROOT}/gcl/tools/kernel_lib_compile/lib -lkernelbin || exit 1
+BoltModel_shared_library="${SHARED_LIBRARY_PREFIX}BoltModel${SHARED_LIBRARY_SUFFIX}"
+BoltModel_static_library="${STATIC_LIBRARY_PREFIX}BoltModel${STATIC_LIBRARY_SUFFIX}"
+bolt_shared_library="${SHARED_LIBRARY_PREFIX}bolt${SHARED_LIBRARY_SUFFIX}"
+bolt_static_library="${STATIC_LIBRARY_PREFIX}bolt${STATIC_LIBRARY_SUFFIX}"
+if [[ -f "${BoltModel_shared_library}" ]]; then
+    rm ${BoltModel_shared_library}
+fi
+if [[ -f "${BoltModel_static_library}" ]]; then
+    rm ${BoltModel_static_library}
+fi
+if [[ -f "${bolt_shared_library}" ]]; then
+    rm ${bolt_shared_library}
+fi
+if [[ -f "${bolt_static_library}" ]]; then
+    rm ${bolt_static_library}
+fi
+
+LDFLAGS=""
+if [[ ${CXXFLAGS} =~ -D_USE_ANDROID_LOG ]]; then
+    LDFLAGS="${LDFLAGS} -llog"
+fi
+if [[ ${CXXFLAGS} =~ -D_USE_OPENMP ]]; then
+    LDFLAGS="${LDFLAGS} -fopenmp"
+fi
+if [[ -f "${gcl_kernel_source_library}" && ${CXXFLAGS} =~ -D_USE_MALI ]]; then
+    ${STRIP} ${gcl_kernel_source_library} || exit 1
+    if [[ "${OpenCL_ROOT}" == "" ]]; then
+        echo "[ERROR] please source third_party/<target>.sh before make."
+        exit 1
+    fi
+    LDFLAGS="${LDFLAGS} -L${OpenCL_ROOT}/lib -lOpenCL"
+fi
+
+if [[ ${apple_toolchain} ]]; then
+    BoltModel_write_so_name=""
+    bolt_write_so_name=""
 else
-    aarch64-linux-android21-clang++ -shared -o ${build_dir}/libBoltModel.so ${srcs} || exit 1
+    BoltModel_write_so_name="-Wl,-soname,${SHARED_LIBRARY_PREFIX}BoltModel${SHARED_LIBRARY_SUFFIX}"
+    bolt_write_so_name="-Wl,-soname,${SHARED_LIBRARY_PREFIX}bolt${SHARED_LIBRARY_SUFFIX}"
 fi
-aarch64-linux-android-strip ${build_dir}/libBoltModel.so || exit 1
-#aarch64-linux-android-readelf -dW ${build_dir}/libBoltModel.so
+if [[ ${SYSTEM} =~ Windows ]]; then
+    BoltModel_write_so_name="${BoltModel_write_so_name} -Wl,--out-implib=BoltModel.lib"
+    bolt_write_so_name="${bolt_write_so_name} -Wl,--out-implib=bolt.lib"
+fi
+${CXX} ${CXXFLAGS} -shared -o ${BoltModel_shared_library} ${jniLibraryObjs} ${LDFLAGS} ${BoltModel_write_so_name} || exit 1
+${CXX} ${CXXFLAGS} -shared -o ${bolt_shared_library} ${sharedLibraryObjs} ${LDFLAGS} ${bolt_write_so_name} || exit 1
+${AR} -rc ${bolt_static_library} ${staticLibraryObjs} || exit 1
+
+if [[ ! ${CXXFLAGS} =~ -D_DEBUG && ${apple_toolchain} == "false" ]]; then
+    ${STRIP} ${BoltModel_shared_library} || exit 1
+    ${STRIP} ${bolt_shared_library} || exit 1
+fi
+cd ${original_dir}
